@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools >= 70.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "datasentry"
+version = "0.1.0"
+description = "Automated dataset quality, statistical drift, and ML-readiness auditing tool"
+requires-python = ">= 3.12"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "rich",
+    "jinja2",
+    "streamlit",
+    "matplotlib",
+    "seaborn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.scripts]
+datasentry = "datasentry.cli:main"
