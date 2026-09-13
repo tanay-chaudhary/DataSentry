@@ -43,6 +43,20 @@
 
 ---
 
+## Step 5 — `test_ingestion.py` (pytest)
+
+- YouTube: "mCoding pytest" (~10 min) — covers test functions, assert, fixtures
+- https://docs.pytest.org/en/stable/how-to/tmp_path.html — `tmp_path` fixture for temporary test files
+- https://docs.pytest.org/en/stable/how-to/assert.html#assertions-about-expected-exceptions — `pytest.raises` for testing errors
+
+### Python Concepts Used
+- `pathlib.Path` and `/` operator for joining paths
+- `try/except` (Python's version of Java's try/catch)
+- `raise` (Python's version of Java's `throw`)
+- f-strings: `f"File not found: {path}"` (like Java's `String.format()`)
+
+---
+
 ## Big Picture — ML & Data Concepts
 
 - YouTube: "StatQuest Machine Learning fundamentals" — first 2-3 videos for vocabulary (features, target, training data)
