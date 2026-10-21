@@ -80,3 +80,27 @@ def test_unknown_target_returns_error(tmp_path, capsys):
 
     assert code == 1
     assert "not found" in capsys.readouterr().err
+
+
+def test_empty_csv_returns_error(tmp_path, capsys):
+    empty = tmp_path / "empty.csv"
+    empty.write_text("")
+
+    code = main([str(empty)])
+
+    assert code == 1
+    assert "empty.csv" in capsys.readouterr().err
+
+
+def test_directory_instead_of_file_returns_error(tmp_path, capsys):
+    code = main([str(tmp_path)])
+
+    assert code == 1
+    assert "Error" in capsys.readouterr().err
+
+
+def test_missing_reference_file_returns_error(tmp_path, capsys):
+    code = main([make_csv(tmp_path), "--reference", str(tmp_path / "nope.csv")])
+
+    assert code == 1
+    assert "reference" in capsys.readouterr().err

@@ -8,6 +8,7 @@ venv/
 .env
 *.csv
 !data/benchmark_suite/**/*.csv
+!test_data/**/*.csv
 .pytest_cache/
 htmlcov/
 .coverage

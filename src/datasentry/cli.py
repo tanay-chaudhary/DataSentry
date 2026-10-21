@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+import pandas as pd
+
 from datasentry.config import SentryConfig
 from datasentry.core.distribution import summarize_distribution
 from datasentry.core.drift import detect_drift
@@ -9,17 +11,36 @@ from datasentry.core.ingestion import ingest_csv
 from datasentry.core.leakage import detect_leakage
 from datasentry.core.outliers import detect_outliers
 from datasentry.core.quality import quality_check
+from datasentry.core.schema import infer_schema
 from datasentry.reporters.console import print_report
 from datasentry.reporters.html import export_html
 from datasentry.reporters.json_exporter import export_json
-from datasentry.core.schema import infer_schema
 from datasentry.scoring.readiness import compute_readiness
 from datasentry.scoring.remediation import suggest_remediation
 
-# Placeholders passed along when an optional check is skipped
-EMPTY_IMBALANCE = {"class_distribution": {}, "imbalanced": False, "minority_classes": []}
-EMPTY_LEAKAGE = {"columns": {}}
-EMPTY_DRIFT = {}
+# Errors that can happen while reading a CSV file
+LOAD_ERRORS = (
+    FileNotFoundError,
+    IsADirectoryError,
+    PermissionError,
+    pd.errors.EmptyDataError,
+    pd.errors.ParserError,
+    UnicodeDecodeError,
+)
+
+
+# Placeholders passed along when an optional check is skipped.
+# These are functions so every run gets a fresh dict.
+def empty_imbalance() -> dict:
+    return {"class_distribution": {}, "imbalanced": False, "minority_classes": []}
+
+
+def empty_leakage() -> dict:
+    return {"columns": {}}
+
+
+def empty_drift() -> dict:
+    return {}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,23 +56,28 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _load(path: str, config: SentryConfig, label: str):
+    """Load a CSV, or print a clean error and return None."""
+    try:
+        return ingest_csv(path, config)
+    except LOAD_ERRORS as e:
+        print(f"Error: could not read {label} file '{path}': {e}", file=sys.stderr)
+        return None
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     config = SentryConfig()
 
     # 1. Load the data
-    try:
-        df = ingest_csv(args.file, config)
-    except FileNotFoundError:
-        print(f"Error: file not found: {args.file}", file=sys.stderr)
+    df = _load(args.file, config, "input")
+    if df is None:
         return 1
 
     df_reference = None
     if args.reference:
-        try:
-            df_reference = ingest_csv(args.reference, config)
-        except FileNotFoundError:
-            print(f"Error: reference file not found: {args.reference}", file=sys.stderr)
+        df_reference = _load(args.reference, config, "reference")
+        if df_reference is None:
             return 1
 
     if args.target and args.target not in df.columns:
@@ -65,8 +91,8 @@ def main(argv=None) -> int:
     distribution_result = summarize_distribution(df, config)
 
     # 3. Optional checks
-    imbalance_result = EMPTY_IMBALANCE
-    leakage_result = EMPTY_LEAKAGE
+    imbalance_result = empty_imbalance()
+    leakage_result = empty_leakage()
     if args.target:
         if df[args.target].nunique() > config.cardinality_cap:
             print(
@@ -78,7 +104,7 @@ def main(argv=None) -> int:
             imbalance_result = detect_imbalance(df, args.target, config)
         leakage_result = detect_leakage(df, args.target, config)
 
-    drift_result = EMPTY_DRIFT
+    drift_result = empty_drift()
     if df_reference is not None:
         drift_result = detect_drift(df_reference, df, config)
 

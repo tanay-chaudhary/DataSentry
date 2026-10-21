@@ -26,7 +26,7 @@ def export_json(results: dict, output_path: str) -> None:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    text = json.dumps(results, indent=2, default=_to_serializable, ensure_ascii=False)
+    text = json.dumps(results, indent=2, default=_to_serializable, ensure_ascii=False, allow_nan=False)
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
